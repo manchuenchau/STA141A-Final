@@ -1,0 +1,443 @@
+---
+title: "Analysis and Prediction of the Trend of the Death in COVID-19 Pandemic of USA"
+author: "Man Chuen Chau (919819081)"
+date: "03/13/2022"
+output:
+  html_document:
+    df_print: paged
+    number_sections: yes
+---
+```{r global_options, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(fig.pos = 'H')
+
+```
+
+
+# Abstract 
+
+COVID-19 Pandemic has been happening for 2 years. This coronavirus disease has varied from Alpha to the latest Omicron variant. Unfortunately, this latest variant has the highest rate of inflection (1) though its death rate seems lower than Delta variant. Nevertheless, some of the countries advocate to coexist with COVID-19 due to lower death rate of the Omicron variant. The goal of this coexistence with COVID-19 policy is to let people continue to live as usual. On the contrary, some countries insist on zero-covid policy that prevents more people suffering from the disease. USA has opted in the coexistence with COVID-19 since the beginning of 2022. This project will analyze the updated data of USA from WHO, predict the trend of the death of COVID-19 in USA, and determine if Americans can really coexist with COVID-19.
+
+
+
+# Introduction
+
+COVID-19 is till spreading all over the world. In the United states of America, a ton of people get infected every single day but she would like to treat COVID-19 the way like a flu; this coexistence with COVID-19 policy helps to recover our living and continue the economic growth but it might create ton of new inflection cases and put a heavy burden on their medical system regardless of the spread of virus and how many people suffering from this virus. However, still there are some countries imposing zero-covid policy against high inflection rate of COVID-19; this policy helps to slow down the spread of virus and put less burden on their medical system but it also has a great impact on the economy and people’s living. Americans are facing the dilemma of both policies. We do not know which one is better. 
+
+Infected people would be classified as new cases. Some of the new cases will be classified as new deaths if they cannot make it. Thus, there is certainly a relationship between new cases and new deaths. Deaths means that all critical patients needed intensive and critical care medicine before death; it will consume much medical resources. If a medical system crashes due to insufficient resources, all patients including other non-covid-19 infected patients might die for no treatment, not die for the disease. The coexistence with COVID-19 policy is really workable as long as the number of deaths can keep lower and lower that will not crash the medical system. People can really live with COVID-19. That is why the trend of the number of deaths is so important. The objectives of this project are to analyze the COVID-19 data and try to find out if the trend of the number of death is going down even though the number of new cases is going up. 
+
+
+
+# Background 
+
+All data is downloaded from WHO website: https://covid19.who.int/WHO-COVID-19-global-data.csv. Every member of WHO daily reports the latest cases to WHO and WHO updates the data set daily. All data are observational. The type of this observational study is retrospective (i.e. might increase in new cases lead to increase in deaths?).
+
+The structure and description of the COVID-19 dataset are given below (World Health Organization):
+
+**Data frame: **
+
+- Date_reported - the report date
+- Country_code - the code of a country
+- Country - the name of a country
+- WHO_region - WHO region
+- New_cases - new cases happended on the report date
+- Cumulative_cases - cumulative cases up to the report date
+- New_deaths - new cases happended on the report date
+- Cumulative_deaths - cumulative cases up to the report date
+
+**List of WHO Regions:**
+
+- AFR  - African Region
+- AMR  - Region of the Americas
+- SEAR - South-East Asian Region
+- EUR  - European Region
+- EMR  - Eastern Mediterranean Region
+- WPR  - Western Pacific Region
+- Other
+
+
+```{R}
+options(warn=-1)
+## use the following libraries
+library(tidyverse)
+
+## import data from WHO website
+global_covid <- read_csv("https://covid19.who.int/WHO-COVID-19-global-data.csv")
+## import data from the local computer
+##covid <- read_csv("./WHO-COVID-19-global-data.csv")
+
+## save the file into local hard drive
+##global_covid_file <- write.csv(x=covid, file="WHO-COVID-19-global-data.csv")
+
+## summary of the date
+spec(global_covid)
+cat("\n\n")
+summary(global_covid)
+
+##check missing values
+missing_values <- global_covid %>% filter(is.na(global_covid))
+cat("\n\nNumber of missing value is" , nrow(missing_values), "\n\n")
+
+```
+
+**Validation of data:**
+
+- The data set has no missing value.
+
+- In the global data, new cases and new deaths contain negative values. That was because some governments incorrectly reported accumulative numbers of new cases and new deaths to be lower than the numbers of the previous day. Thus, they had to adjust the values (Haratian et al., 2021). The data provided by USA has no such problem. 
+
+
+**The features of the data columns:**
+
+- The columns: 'Date_reported', 'Country_code', 'Country' and 'WHO_region' are categorical data. 'Date_reported' is ordinal data and the other columns are nominal. 
+
+- The current cumulative cases (Cumulative_cases) is equal to (the previous date of cumulative cases + current new cases). Thus, 'Cumulative_cases' and 'New_cases' are dependent.
+
+- The current cumulative deaths (Cumulative_deaths) is equal to (the previous date of cumulative deaths + current new deaths). Thus, 'Cumulative_deaths' and 'New_deaths' are dependent.
+
+
+
+# Descriptive analysis 
+
+**The summary of the US Covid-19 data**
+
+Extract US data from the global data set and show the summary table of the US data:
+
+```{R}
+##extract US data
+us_covid <- global_covid %>% filter(Country_code == "US")
+summary(us_covid)
+
+```
+From the above summary, new cases and new deaths of US data contain no negative values. In other words, the data the US government provided to WHO is correct and she did not need to adjust it. Date range is from Jan 20, 2020 to Mar 04, 2022; that is up to date. The number of rows is 792. The means of new cases and new deaths for USA are much higher than the means of the global data. That means the situation in USA is very serious.
+
+Furthermore, the data range of new cases and new deaths are pretty wide. It is necessary to make the boxplots for new cases and new deaths so as to check the outliers.
+
+```{R}
+us_covid %>% filter(New_cases > 0) %>% 
+ggplot(mapping=aes(x=Country, y=New_cases)) +
+  geom_boxplot() +
+  xlab("Figure 1") + ylab("New Cases") + ggtitle("Boxplot of New Cases by USA")
+
+```
+
+Try to extract all new cases which are greater than zero. The above boxplot shows that the data of new cases is highly skewed to left (i.e. trend to zero) and there are many outliers. 
+
+
+```{R}
+us_covid %>% filter(New_cases > 0) %>% 
+ggplot(mapping=aes(x=Country, y=New_deaths)) +
+  geom_boxplot() +
+  xlab("Figure 2") + ylab("New Deaths") + ggtitle("Boxplot of New Deaths by USA")
+```
+
+Try to extract all new deaths which are greater than zero. The above boxplot shows that the data of new cases is also skewed to left (i.e. trend to zero) and there are also many outliers. 
+
+However, we have to trust the data from WHO which have no sampling problems, measurement errors or data entry errors (Which covid-19 data can you trust? 2021). Thus, those outliers will not be removed from the data set.
+
+To draw 4 line charts to look over the trends of the new cases and deaths for both USA and the world.
+
+```{R}
+us_covid %>% ggplot(aes(x = Date_reported, y = New_cases)) + 
+  geom_line(size = 0.5, color = "blue") +
+  labs(title="Plot of New Cases of the USA Data",x="Date Reported\n\nFigure 3", y = "New Cases") 
+
+global_covid %>% ggplot(aes(x = Date_reported, y = New_cases)) + 
+  geom_line(size = 0.5, color = "blue") +
+  labs(title="Plot of New Cases of Global Data",x="Date Reported\n\nFigure 4", y = "New Cases") 
+```
+
+```{R}
+us_covid %>% ggplot(aes(x = Date_reported, y = New_deaths)) + 
+  geom_line(size = 0.5, color = "red") +
+  labs(title="Plot of New Deaths of US Data",x="Date Reported\n\nFigure 5", y = "New Deaths") 
+
+global_covid %>% ggplot(aes(x = Date_reported, y = New_deaths)) + 
+  geom_line(size = 0.5, color = "blue") +
+  labs(title="Plot of New Deaths of Global Data",x="Date Reported\n\nFigure 6", y = "New Deaths") 
+```
+
+From the above 4 line charts, In USA, the number of new cases appears to go down after the January of 2022 but the number of new deaths has been great fluctuation since December of 2021. Comparing with the world in 2022, the new deaths of US keep higher than the average of the world but the new cases is lower than the average of the world.
+
+
+
+# Inferential analysis 
+
+Obtain the scatter plot matrix for the data set.
+
+```{R}
+us_covid %>% dplyr::select(New_deaths, New_cases, Cumulative_cases, Cumulative_deaths) %>% 
+  pairs(panel=panel.smooth, main = "Figure 7") 
+
+```
+
+With reference to the above scatter plot Matrix, noted that:
+
+- New deaths ~ New cases is curved/quadratic.
+
+- New deaths ~ Cumulative Cases is curved.
+
+- New deaths ~ Cumulative Deaths is curved.
+
+- Cumulative Cases and Cumulative Deaths are dependent with each other.
+
+Based on the data model, Cumulative Cases is dependent on New cases, and Cumulative Deaths is dependent on New Deaths. Thus, Cumulative Cases and Cumulative Deaths should be removed from the model.
+
+BIC will be used as the selection criteria to determine the number of the predictors of the model.
+
+```{R}
+library(leaps)
+subset_data <- us_covid %>% dplyr::select(New_deaths, New_cases, Cumulative_cases, Cumulative_deaths)
+us_covid_model <- regsubsets(New_deaths~., data = subset_data, nvmax = 4)
+summary(us_covid_model)
+
+```
+
+```{R}
+result.sum = summary(us_covid_model)
+critera = data.frame(No_of_variables = 1:3, BIC = result.sum$bic)
+critera
+
+```
+From the above result, the smallest value of BIC is -228.7251 at the first row. The first row of the Selection Algorithm exhaustive table shows that only New_cases has an asterisk. In other words, only New_cases should be selected for the model.
+
+Based on the above scatter plot matrix (figure 7) and the data model, it appears reasonable to consider the following linear regression:
+
+The model is defined as follows: 
+
+  $Y_{i}$ = $\beta_{0}$ + $\beta_{1}$$X_{i}$ + $\beta_{2}$$X_{i}^2$ + ... + $\beta_{n}$$X_{i}^n$ + $\epsilon_{i}$, where n is a positive integer
+
+  $Y_{i}$ is the number of new deaths.
+
+  $X_{i}$ is the number of new cases.
+
+  $\epsilon_{i}$ is the errors
+  
+  $\beta_{0}$, $\beta_{1}$, ... $\beta_{n}$ are the coefficients of the model. They all are unknown.
+
+The model is based on the following assumptions:
+
+  1.    The errors are independent and normally distributed,
+
+  2.    The error term has zero mean, E($\epsilon_{i}$) = 0.
+
+  3.    The error term has constant variance, i.e., Var($\epsilon_{i}$) = $\sigma^2$.
+
+Try to obtain the full model with degree 5:
+
+```{R}
+## try degree 5
+poly_expansion <- function(New_cases, New_deaths, M){
+  new_cases.expanded <- poly(New_cases, degree = M, raw = F);
+  covid_data.poly <- lm(New_deaths ~ new_cases.expanded);
+  return(covid_data.poly)
+}
+
+M = 5; 
+us_covid.poly <- poly_expansion(us_covid$New_cases,us_covid$New_deaths, M)
+plot(us_covid$New_deaths ~ us_covid$New_cases, pch = 16, ylab = "New Deaths", xlab="New Cases\nFigure 8")
+points(y = us_covid.poly$fitted.values, x = us_covid$New_cases, pch = 16, col = "red")
+summary(us_covid.poly)
+```
+
+According to the red dot curve of the figure 8, the growth rate of new deaths increased rapidly but it changed to be smooth later. 
+
+From the above table, new_cases.expanded5 is not significant at all; its p-values is higher than its t-value also. This predictor should be removed from the model. According to the figure 8, also noted that there are some extreme values of the new cases over 1,000,000; those values might be removed.
+
+Try to obtain the full model with degree 4:
+
+```{R}
+M = 4; 
+us_covid.poly1 <- poly_expansion(us_covid$New_cases,us_covid$New_deaths, M)
+plot(us_covid$New_deaths ~ us_covid$New_cases, pch = 16, ylab = "New Deaths", xlab="New Cases\nFigure 9")
+points(y = us_covid.poly1$fitted.values, x = us_covid$New_cases, pch = 16, col = "red")
+summary(us_covid.poly1)
+```
+According to the above table, all predictors are significant; they will be included in the model.
+
+The regression model is:
+
+  $\hat{\beta}_{0}$ is the coefficient of Intercept
+  
+  $\hat{\beta}_{1}$ is the coefficient of new_cases.expanded1 (i,e, $X^1$)
+  
+  $\hat{\beta}_{2}$ is the coefficient of new_cases.expanded2 (i,e, $X^2$)
+  
+  $\hat{\beta}_{3}$ is the coefficient of new_cases.expanded3 (i,e, $X^3$)
+  
+  $\hat{\beta}_{4}$ is the coefficient of new_cases.expanded4 (i,e, $X^4$)
+  
+  $\hat{Y}$ = $\hat{\beta}_{0}$ + $\hat{\beta}_{1}$$X$ + $\hat{\beta}_{2}$$X^2$ + $\hat{\beta}_{3}$$X^3$ + $\hat{\beta}_{4}$$X^4$:
+  
+Based on the above table, each p-value is less than 0.00001 and close to zero; It means that all estimators are very significant and unlikely to be zero.
+
+
+
+# Sensitivity analysis 
+
+```{r}
+options(warn=-1)
+plot(us_covid.poly1)
+
+```
+
+Residuals vs Fitted: The red line appears to be a horizontal line; it implies that there is a strong linear relationship. That is very good.
+
+Normal Q-Q: If residuals points follow the dashed straight line, the residuals are normally distributed. Nevertheless, so many data which are less than -2 or more than 1 appear not to be normally distributed. However, the sample size is very large. This is no problem. The residuals can be supposed to be normally distributed.
+
+Scale-location: the red line appears not to be a horizontal line (upward sloping). That means the residuals have unequal variance. 
+
+Residuals vs Leverage: We can see some cases are outside of Cook's distance line. That means there are some influential cases that have to be removed from the model. According to Figure 8, some new cases are more than 1 million that should be an outlier.
+
+With reference to the above 4 plots, we can conclude that the assumptions of the residuals are not plausible. It is necessary to perform variable transformation to remedy the model.
+
+First of all, calculate the mean and variance of the response to determine the way of variable transformation.
+
+```{R}
+var_New_deaths <- var(us_covid$New_deaths)
+mean_New_deaths <- mean(us_covid$New_deaths)
+cat("For new deaths:\n")
+cat("Variance/mean =", var_New_deaths / mean_New_deaths, "\n")
+cat("sd/mean =", sqrt(var_New_deaths) / mean_New_deaths, "\n")
+cat("sd/mean^2  =", sqrt(var_New_deaths) / (mean_New_deaths)^2, "\n\n")
+
+```
+The value of Variance/mean is largest, so try to transform the response (New_deaths) by taking square root. 
+
+
+```{R}
+us_covid.trn <- us_covid %>% filter(us_covid$New_cases < 980000)
+us_covid.trn$New_deaths <- sqrt(us_covid.trn$New_deaths)
+
+M = 4; 
+us_covid.poly2 <- poly_expansion(us_covid.trn$New_cases, us_covid.trn$New_deaths, M)
+summary(us_covid.poly2)
+plot(us_covid.poly2)
+
+```
+After variable transformation:
+
+Residuals vs Fitted: The red line appears to be a horizontal line; it implies that there is a strong linear relationship. That is very good.
+
+Normal Q-Q: If the residuals points follow the dashed straight line, the residuals are normally distributed. Nevertheless, so many data which are less than -1.5 or more than 1 appear not to be normally distributed. However, the sample size is very large. This is no problem. The residuals can be supposed to be normally distributed.
+
+Scale-location: the red line appears to be a horizontal line. That means the residuals have equal variance. 
+
+Residuals vs Leverage: all cases are inside of Cook's distance line. That means there are no influential cases.
+
+However, it is necessary to conduct a hypothesis test to test the equal variance assumption. Breusch-Pagan test is used to test whether the residuals are distributed with equal variance (Zach, 2020).
+
+
+```{r}
+packages_list <- c("zoo", "lmtest")
+new_packages <- packages_list[!(packages_list %in% installed.packages()[,"Package"])]
+if(length(new_packages)) install.packages(new_packages)
+
+library(zoo)
+library(lmtest)
+bptest(us_covid.poly2)
+
+```
+
+$H_{0}$: The residuals are distributed with equal variance (Homoscedasticity) vs
+
+$H_{a}$: The residuals are distributed with unequal variance (Heteroscedasticity)
+
+Level of significance: 0.05
+
+Critical values: p-value = 0.01311
+
+Decision: If p-value > 0.05, then reject $H_{0}$.
+
+Conclusion:
+At the 0.05 significance level, We fail to reject the null hypothesis and conclude that the residuals are significantly distributed with equal variance.
+
+With reference to the above 4 plots and the hypothesis test, we can conclude that the assumptions of the residuals are plausible. Furthermore, the values of R-squared and Adjusted R-squared have increased respectively without adding new predictors; that means there is an improvement on correlation between the response and predictor.
+
+The updated regression model is:
+
+  $\sqrt{\hat{Y}}$ = $\hat{\beta}_{0}$ + $\hat{\beta}_{1}$$X$ + $\hat{\beta}_{2}$$X^2$ + $\hat{\beta}_{3}$$X^3$ + $\hat{\beta}_{4}$$X^4$ + $\epsilon$:
+  
+
+
+# Discussion 
+
+We have to analyze the trend of deaths and determine if the policy of the coexistence with COVID-19 is appropriate in the united states of America. 
+
+The regression model:
+
+  $\sqrt{\hat{Y}}$ = 30.9736 + 225.1097$X}$ - 201.1008$X^2$ + 119.7143$X^3$ - 79.6982$X^4$
+
+If X = 0 (new cases = 0), $\hat{Y}$ = $30.9736^2$ = 959.364 (new deaths). That is permissible for this model because there must raise some new cases and some of the new cases might become new deaths later. The current date has no new cases but it might have some new deaths which has been registered as new cases for few days. No matter what happened, the cumulative deaths must be less than or equal to the cumulative new cases.
+
+```{R}
+Seq_no <- function(n) {
+  no <- integer(n)
+  for (i in seq_len(n)) {
+    cur_no <- ceiling(sqrt(i*2 + 0.25) - 0.5)
+    no[i] <- i * (-1)^(cur_no + 1)
+  }
+  return(no)
+}
+
+x <- Seq_no(1000)
+
+y <- 30.9736 + 225.1097*x - 201.1008*x^2 + 119.7143*x^3 - 79.6982*x^4
+plot(x, y, xlab = "x\nFigure 9")
+
+
+```
+Noted that the figure 9 shows that the equation: 30.9736 + 225.1097$X}$ - 201.1008$X^2$ + 119.7143$X^3$ - 79.6982$X^4$ is concave downward (downward sloping when x > 0). It implies that the the number of deaths will decrease as the number of new cases increases. Nevertheless, we have to plot the transformed data of the model either:
+
+```{R}
+plot(us_covid.trn$New_deaths ~ us_covid.trn$New_cases, pch = 16, ylab = "New Deaths", xlab="New Cases\nFigure 10")
+points(y = us_covid.poly2$fitted.values, x = us_covid.trn$New_cases, pch = 16, col = "red")
+
+```
+The figure 10 shows us that the number of deaths does not decrease significantly when the number of new cases increases though the number of deaths appears to be downward sloping when number of new cases is over 700000. Furthermore, the figure 11 shows us that the trend of the death rate is upward sloping after Jan, 2022. In other words, increase in new cases also leads to proportional increase in new deaths. That does not mean the trend of deaths will grow up because so many new cases have not been reported. In any case, the number of deaths still keeps at a lower level (i.e. the rate is less than 0.05).
+
+
+```{r}
+
+us_covid$Death_rate <- us_covid$New_deaths / us_covid$New_cases
+
+us_covid %>% filter(New_deaths > 0) %>% ggplot(aes(x = Date_reported, y = Death_rate)) + 
+  geom_line(size = 0.5, color = "blue") +
+  labs(title="Plot of Death Rate of USA", x="Date Reported\n\nFigure 11", y = "Death Rate") 
+
+```
+
+**Conclusion**
+
+There is no sign that the trend of deaths will significantly grow up in the foreseeable future that will lead to medical system crashes. According to the latest forecasts of new and total Deaths (Covid-19 forecasts: Deaths) from CDC on Mar/2/2022, the deaths will likely decrease over the next 4 weeks. Thus, the coexistence with COVID-19 policy is workable in USA. Americans will keep living as usual and their economic activities will also keep growing up. 
+
+
+
+# Acknowledgement {-}
+
+N/A
+
+
+
+# Reference {-}
+
+Centers for Disease Control and Prevention. (n.d.). Covid-19 forecasts: Deaths. Centers for Disease Control and Prevention. Retrieved March 6, 2022, from https://www.cdc.gov/coronavirus/2019-ncov/science/forecasting/forecasting-us.html 
+
+Haratian, A., Fazelinia, H., Maleki, Z., Ramazi, P., Wang, H., Lewis, M. A., Greiner, R., &amp; Wishart, D. (2021, September 10). Dataset of covid-19 outbreak and potential predictive features in the USA. Data in Brief. Retrieved February 27, 2022, from https://www.sciencedirect.com/science/article/pii/S2352340921006429 
+
+Which covid-19 data can you trust? Harvard Business Review. (2021, February 1). Retrieved February 27, 2022, from https://hbr.org/2020/05/which-covid-19-data-can-you-trust 
+
+World Health Organization. (n.d.). World Health Organization. Retrieved March 6, 2022, from https://covid19.who.int/info?openIndex=2 
+
+Zach. (2020, December 31). How to perform a breusch-pagan test in R. Statology. Retrieved March 8, 2022, from https://www.statology.org/breusch-pagan-test-r/ 
+
+
+# Session info {-}
+
+<span style='color:blue'>
+Report information of your `R` session for reproducibility. 
+</span> 
+
+
+```{r}
+sessionInfo()
+```
