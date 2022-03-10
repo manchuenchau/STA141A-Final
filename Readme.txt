@@ -12,7 +12,10 @@ Programming Tools:
 R version 4.1.2 - A primary scripting language for the project.
 RStudio 1.4.1717 (free version) - A primary development environment for R version 4.1.2.
 
-The tools can be downloaded from: https://www.rstudio.com/products/rstudio/download/
+R version 4.1.2 can be otained from the following website:
+https://www.r-project.org/
+
+RStudio can be downloaded from: https://www.rstudio.com/products/rstudio/download/
 
 Libraries:
 tidyverse 1.3.1 - A collection of R packages designed for data science.
