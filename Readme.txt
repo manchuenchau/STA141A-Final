@@ -10,7 +10,7 @@ The project document and codes are created by the following programming tools an
 
 Programming Tools:
 R version 4.1.2 - A primary scripting language for the project.
-RStudio 1.4.1717 (free version) - A primary development environment forR version 4.1.2.
+RStudio 1.4.1717 (free version) - A primary development environment for R version 4.1.2.
 
 The tools can be downloaded from: https://www.rstudio.com/products/rstudio/download/
 
