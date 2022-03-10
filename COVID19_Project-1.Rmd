@@ -2,6 +2,7 @@
 title: "Analysis and Prediction of the Trend of the Death in COVID-19 Pandemic of USA"
 author: "Man Chuen Chau (919819081)"
 date: "03/13/2022"
+github repositories: "https://github.com/manchuenchau/STA141A-Final"
 output:
   html_document:
     df_print: paged
@@ -57,13 +58,27 @@ The structure and description of the COVID-19 dataset are given below (World Hea
 
 ```{R}
 options(warn=-1)
-## use the following libraries
+## check if the packages exist
+packages_list <- c("zoo", "lmtest", "leaps", "tidyverse")
+new_packages <- packages_list[!(packages_list %in% installed.packages()[,"Package"])]
+## install the necessary packages if they do not exist
+if (length(new_packages)) install.packages(new_packages)
+
+## use the library
 library(tidyverse)
 
-## import data from WHO website
-global_covid <- read_csv("https://covid19.who.int/WHO-COVID-19-global-data.csv")
-## import data from the local computer
-##covid <- read_csv("./WHO-COVID-19-global-data.csv")
+## try to import data from WHO website
+global_covid <- try(read_csv("https://covid19.who.int/WHO-COVID-19-global-data.csv"))
+
+if (class(global_covid) == "try-error"){
+  # show error message
+  message("The online covid-19 file doesn't exist, please try to read the file from your local computer")
+  global_covid <- try(read_csv(file.choose()))
+  # stop the script if no file selected
+  if (class(global_covid) == "try-error"){
+    stop("No file selected, so the script must end here")
+  }
+}
 
 ## save the file into local hard drive
 ##global_covid_file <- write.csv(x=covid, file="WHO-COVID-19-global-data.csv")
@@ -113,6 +128,7 @@ From the above summary, new cases and new deaths of US data contain no negative 
 Furthermore, the data range of new cases and new deaths are pretty wide. It is necessary to make the boxplots for new cases and new deaths so as to check the outliers.
 
 ```{R}
+## draw a boxplot for new cases of us data
 us_covid %>% filter(New_cases > 0) %>% 
 ggplot(mapping=aes(x=Country, y=New_cases)) +
   geom_boxplot() +
@@ -124,6 +140,7 @@ Try to extract all new cases which are greater than zero. The above boxplot show
 
 
 ```{R}
+## draw a boxplot for new deaths of us data
 us_covid %>% filter(New_cases > 0) %>% 
 ggplot(mapping=aes(x=Country, y=New_deaths)) +
   geom_boxplot() +
@@ -137,6 +154,7 @@ However, we have to trust the data from WHO which have no sampling problems, mea
 To draw 4 line charts to look over the trends of the new cases and deaths for both USA and the world.
 
 ```{R}
+## draw line charts for the new cases of both global and us data
 us_covid %>% ggplot(aes(x = Date_reported, y = New_cases)) + 
   geom_line(size = 0.5, color = "blue") +
   labs(title="Plot of New Cases of the USA Data",x="Date Reported\n\nFigure 3", y = "New Cases") 
@@ -147,6 +165,7 @@ global_covid %>% ggplot(aes(x = Date_reported, y = New_cases)) +
 ```
 
 ```{R}
+## draw line charts for the new deaths of both global and us data
 us_covid %>% ggplot(aes(x = Date_reported, y = New_deaths)) + 
   geom_line(size = 0.5, color = "red") +
   labs(title="Plot of New Deaths of US Data",x="Date Reported\n\nFigure 5", y = "New Deaths") 
@@ -165,6 +184,7 @@ From the above 4 line charts, In USA, the number of new cases appears to go down
 Obtain the scatter plot matrix for the data set.
 
 ```{R}
+## draw scatter plot matrix for glance at the relationships between the response and predictors
 us_covid %>% dplyr::select(New_deaths, New_cases, Cumulative_cases, Cumulative_deaths) %>% 
   pairs(panel=panel.smooth, main = "Figure 7") 
 
@@ -185,6 +205,7 @@ Based on the data model, Cumulative Cases is dependent on New cases, and Cumulat
 BIC will be used as the selection criteria to determine the number of the predictors of the model.
 
 ```{R}
+## build selection algorithm exhaustive table for predictor selections
 library(leaps)
 subset_data <- us_covid %>% dplyr::select(New_deaths, New_cases, Cumulative_cases, Cumulative_deaths)
 us_covid_model <- regsubsets(New_deaths~., data = subset_data, nvmax = 4)
@@ -193,6 +214,7 @@ summary(us_covid_model)
 ```
 
 ```{R}
+## calculate BIC for predictor selections
 result.sum = summary(us_covid_model)
 critera = data.frame(No_of_variables = 1:3, BIC = result.sum$bic)
 critera
@@ -225,17 +247,20 @@ The model is based on the following assumptions:
 Try to obtain the full model with degree 5:
 
 ```{R}
-## try degree 5
+## a common function for  Meta-feature generation 
 poly_expansion <- function(New_cases, New_deaths, M){
   new_cases.expanded <- poly(New_cases, degree = M, raw = F);
   covid_data.poly <- lm(New_deaths ~ new_cases.expanded);
   return(covid_data.poly)
 }
 
+## try degree 5 for the model
 M = 5; 
 us_covid.poly <- poly_expansion(us_covid$New_cases,us_covid$New_deaths, M)
+## plot the relationship between the response and predictor for the degree 5 model
 plot(us_covid$New_deaths ~ us_covid$New_cases, pch = 16, ylab = "New Deaths", xlab="New Cases\nFigure 8")
 points(y = us_covid.poly$fitted.values, x = us_covid$New_cases, pch = 16, col = "red")
+## show summary of the degree 5 model
 summary(us_covid.poly)
 ```
 
@@ -246,10 +271,13 @@ From the above table, new_cases.expanded5 is not significant at all; its p-value
 Try to obtain the full model with degree 4:
 
 ```{R}
+## try degree 4 for the model
 M = 4; 
 us_covid.poly1 <- poly_expansion(us_covid$New_cases,us_covid$New_deaths, M)
+## plot the relationship between the response and predictor for the degree 5 model
 plot(us_covid$New_deaths ~ us_covid$New_cases, pch = 16, ylab = "New Deaths", xlab="New Cases\nFigure 9")
 points(y = us_covid.poly1$fitted.values, x = us_covid$New_cases, pch = 16, col = "red")
+## show summary of the degree 4 model
 summary(us_covid.poly1)
 ```
 According to the above table, all predictors are significant; they will be included in the model.
@@ -275,6 +303,7 @@ Based on the above table, each p-value is less than 0.00001 and close to zero; I
 # Sensitivity analysis 
 
 ```{r}
+## plot 4 charts for Sensitivity analysis 
 options(warn=-1)
 plot(us_covid.poly1)
 
@@ -293,6 +322,7 @@ With reference to the above 4 plots, we can conclude that the assumptions of the
 First of all, calculate the mean and variance of the response to determine the way of variable transformation.
 
 ```{R}
+## calculate mean and variance for data transformation
 var_New_deaths <- var(us_covid$New_deaths)
 mean_New_deaths <- mean(us_covid$New_deaths)
 cat("For new deaths:\n")
@@ -305,12 +335,16 @@ The value of Variance/mean is largest, so try to transform the response (New_dea
 
 
 ```{R}
+## perform data transformation
 us_covid.trn <- us_covid %>% filter(us_covid$New_cases < 980000)
 us_covid.trn$New_deaths <- sqrt(us_covid.trn$New_deaths)
 
+## try again degree 4 for the model
 M = 4; 
 us_covid.poly2 <- poly_expansion(us_covid.trn$New_cases, us_covid.trn$New_deaths, M)
+## show summary of the model with data transformed
 summary(us_covid.poly2)
+## plot 4 charts again for Sensitivity analysis 
 plot(us_covid.poly2)
 
 ```
@@ -328,12 +362,9 @@ However, it is necessary to conduct a hypothesis test to test the equal variance
 
 
 ```{r}
-packages_list <- c("zoo", "lmtest")
-new_packages <- packages_list[!(packages_list %in% installed.packages()[,"Package"])]
-if(length(new_packages)) install.packages(new_packages)
-
 library(zoo)
 library(lmtest)
+## perform Breusch-Pagan test
 bptest(us_covid.poly2)
 
 ```
@@ -370,41 +401,44 @@ The regression model:
 If X = 0 (new cases = 0), $\hat{Y}$ = $30.9736^2$ = 959.364 (new deaths). That is permissible for this model because there must raise some new cases and some of the new cases might become new deaths later. The current date has no new cases but it might have some new deaths which has been registered as new cases for few days. No matter what happened, the cumulative deaths must be less than or equal to the cumulative new cases.
 
 ```{R}
-Seq_no <- function(n) {
-  no <- integer(n)
+## a common function to generate negative and positive sequential numbers with input n
+sign_seq_no <- function(n) {
+  seq_no <- integer(n)
   for (i in seq_len(n)) {
     cur_no <- ceiling(sqrt(i*2 + 0.25) - 0.5)
-    no[i] <- i * (-1)^(cur_no + 1)
+    seq_no[i] <- i * (-1)^(cur_no + 1)
   }
-  return(no)
+  return(seq_no)
 }
 
-x <- Seq_no(1000)
-
+## generate sequential numbers to plot the model
+x <- sign_seq_no(1000)
+## plot the selected model
 y <- 30.9736 + 225.1097*x - 201.1008*x^2 + 119.7143*x^3 - 79.6982*x^4
-plot(x, y, xlab = "x\nFigure 9")
-
+plot(x, y, xlab = "New Cases\nFigure 9", ylab = "New Deaths")
 
 ```
-Noted that the figure 9 shows that the equation: 30.9736 + 225.1097$X}$ - 201.1008$X^2$ + 119.7143$X^3$ - 79.6982$X^4$ is concave downward (downward sloping when x > 0). It implies that the the number of deaths will decrease as the number of new cases increases. Nevertheless, we have to plot the transformed data of the model either:
+Noted that the figure 9 is the graph of the model to show that the model equation: 30.9736 + 225.1097$X}$ - 201.1008$X^2$ + 119.7143$X^3$ - 79.6982$X^4$ is concave downward (close to horizontal when |New Cases| <= 500 and downward sloping when |New cases| > 500). It implies that the the number of deaths will keep constant if new cases <= 500 and decrease if new cases > 500 (note: new cases >= 0) as the number of new cases increases. Nevertheless, we have to plot the transformed data of the model either:
 
 ```{R}
+## plot again the relationship betwwen response and predictor for the selected model
 plot(us_covid.trn$New_deaths ~ us_covid.trn$New_cases, pch = 16, ylab = "New Deaths", xlab="New Cases\nFigure 10")
 points(y = us_covid.poly2$fitted.values, x = us_covid.trn$New_cases, pch = 16, col = "red")
 
 ```
-The figure 10 shows us that the number of deaths does not decrease significantly when the number of new cases increases though the number of deaths appears to be downward sloping when number of new cases is over 700000. Furthermore, the figure 11 shows us that the trend of the death rate is upward sloping after Jan, 2022. In other words, increase in new cases also leads to proportional increase in new deaths. That does not mean the trend of deaths will grow up because so many new cases have not been reported. In any case, the number of deaths still keeps at a lower level (i.e. the rate is less than 0.05).
-
+The figure 10 shows us that the number of deaths does not decrease significantly when the number of new cases increases though the number of deaths appears to be downward sloping when number of new cases is over 700000. 
 
 ```{r}
-
+## calculate the death rate of the selected model
 us_covid$Death_rate <- us_covid$New_deaths / us_covid$New_cases
-
+## plot the line chart for the selected model
 us_covid %>% filter(New_deaths > 0) %>% ggplot(aes(x = Date_reported, y = Death_rate)) + 
   geom_line(size = 0.5, color = "blue") +
   labs(title="Plot of Death Rate of USA", x="Date Reported\n\nFigure 11", y = "Death Rate") 
 
 ```
+Furthermore, the figure 11 shows us that the trend of the death rate is upward sloping after Jan, 2022. In other words, increase in new cases also leads to proportional increase in new deaths. It does not truely reflect that the trend of deaths will grow up because many new cases have not been reported due to mild illness (Aizenman et al., 2021). If the number of the unreported new cases is significant, that must lead to a higher death rate. In any case, the number of deaths still keeps at a lower level (i.e. the rate is less than 0.05); that is acceptable for the society.
+
 
 **Conclusion**
 
@@ -420,6 +454,8 @@ N/A
 
 # Reference {-}
 
+Aizenman, N., Carlsen, A., &amp; Talbot, R. (2021, February 6). Why the pandemic is 10 times worse than you think. NPR. Retrieved March 9, 2022, from https://www.npr.org/sections/health-shots/2021/02/06/964527835/why-the-pandemic-is-10-times-worse-than-you-think
+
 Centers for Disease Control and Prevention. (n.d.). Covid-19 forecasts: Deaths. Centers for Disease Control and Prevention. Retrieved March 6, 2022, from https://www.cdc.gov/coronavirus/2019-ncov/science/forecasting/forecasting-us.html 
 
 Haratian, A., Fazelinia, H., Maleki, Z., Ramazi, P., Wang, H., Lewis, M. A., Greiner, R., &amp; Wishart, D. (2021, September 10). Dataset of covid-19 outbreak and potential predictive features in the USA. Data in Brief. Retrieved February 27, 2022, from https://www.sciencedirect.com/science/article/pii/S2352340921006429 
@@ -429,6 +465,7 @@ Which covid-19 data can you trust? Harvard Business Review. (2021, February 1). 
 World Health Organization. (n.d.). World Health Organization. Retrieved March 6, 2022, from https://covid19.who.int/info?openIndex=2 
 
 Zach. (2020, December 31). How to perform a breusch-pagan test in R. Statology. Retrieved March 8, 2022, from https://www.statology.org/breusch-pagan-test-r/ 
+
 
 
 # Session info {-}
