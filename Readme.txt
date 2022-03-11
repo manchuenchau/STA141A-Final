@@ -21,10 +21,12 @@ https://www.r-project.org/
 RStudio can be downloaded from: https://www.rstudio.com/products/rstudio/download/
 
 Libraries:
+car 3.0-11 - Companion to Applied Regression
+caret 6.0-90 - Classification and Regression Training
+leaps 3.1 - Regression subset selection.
+lmtest 0.9-3.8 - Testing Linear Regression Models
 tidyverse 1.3.1 - A collection of R packages designed for data science.
 zoo 1.8-9 - S3 Infrastructure for Regular and Irregular Time Series.
-lmtest 0.9-3.8 - Testing Linear Regression Models
-leaps 3.1 - Regression subset selection.
 
 The above tools must be installed in your computer prior to reproducing the report. 
 The project report can be reproduced on either Windows 10 or macOS 10.14+.
