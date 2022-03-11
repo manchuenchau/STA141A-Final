@@ -6,6 +6,9 @@ Date: 03/13/2022
 The project document and codes are in the format of rmarkdown. Please refer to the following website:
 https://rmarkdown.rstudio.com/
 
+Covid data is downloaded from the WHO website: https://covid19.who.int/WHO-COVID-19-global-data.csv
+This project report supports online data file. If Internet is not available, the project codes will ask you for the local computer path of the data file. The format of the data file must be same as the file "WHO-COVID-19-global-data.csv" from the WHO website. Other data files do not work at this project report.
+
 The project document and codes are created by the following programming tools and R libraries. 
 
 Programming Tools:
