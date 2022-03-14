@@ -419,7 +419,7 @@ The regression model:
 
   $\sqrt{\hat{Y}}$ = 30.9842 + 225.5356${X}$ - 201.3950$X^2$ + 120.6734$X^3$ - 81.2267$X^4$
 
-If X = 0 (new cases = 0), $\hat{Y}$ = $30.9736^2$ = 959.364 (new deaths). That is permissible for this model because there must raise some new cases and some of the new cases might become new deaths later. The current date has no new cases but it might have some new deaths which has been registered as new cases for few days. No matter what happened, the cumulative deaths must be less than or equal to the cumulative new cases.
+If X = 0 (new cases = 0), $\hat{Y}$ = $30.9842^2$ = 960.02 (new deaths). That is permissible for this model because there must raise some new cases and some of the new cases might become new deaths later. The current date has no new cases but it might have some new deaths which has been registered as new cases for few days. No matter what happened, the cumulative deaths must be less than or equal to the cumulative new cases.
 
 ```{R}
 ## a common function to generate negative and positive sequential numbers with input n
