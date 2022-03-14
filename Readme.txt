@@ -1,6 +1,5 @@
 Course code: STA141A Winter 2022
 Project Title: Analysis and Prediction of the Trend of the Death in COVID-19 Pandemic of USA
-Author: Man Chuen Chau
 Date: 03/13/2022
 
 The project document and codes are in the format of rmarkdown. Please refer to the following website:
